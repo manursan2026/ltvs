@@ -289,12 +289,14 @@
             display: grid;
             grid-template-columns: 1fr;
             gap: 0.75rem;
+            width: 100%;
         }
         
         .filter-group {
             display: flex;
             flex-direction: column;
             gap: 0.35rem;
+            width: 100%;
         }
         
         .filter-group label {
@@ -314,6 +316,8 @@
             color: #fff;
             transition: all 0.3s;
             min-height: 48px;
+            width: 100%;
+            box-sizing: border-box;
         }
         
         .filter-group input:focus, .filter-group select:focus {
@@ -333,6 +337,7 @@
         
         .search-wrapper {
             position: relative;
+            width: 100%;
         }
         
         .search-wrapper .search-icon {
@@ -347,10 +352,6 @@
         .filter-group input.with-icon {
             padding-left: 2.75rem;
             padding-right: 60px;
-        }
-        
-        .search-wrapper {
-            position: relative;
         }
         
         .search-count {
@@ -383,7 +384,12 @@
         
         .filter-footer {
             margin-top: 1rem;
-            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            width: 100%;
         }
         
         .results-count {
@@ -394,6 +400,27 @@
         .results-count strong {
             color: #e74c3c;
             font-weight: 700;
+        }
+        
+        .btn-clear-filters {
+            background: transparent;
+            border: 2px solid rgba(255,255,255,0.2);
+            color: #8892b0;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        
+        .btn-clear-filters:hover {
+            border-color: #e74c3c;
+            color: #e74c3c;
+            background: rgba(231,76,60,0.1);
         }
         
         /* Tabs de gráficos */
@@ -821,6 +848,7 @@
                 </div>
                 <div class="filter-footer">
                     <div class="results-count">Mostrando <strong id="count-filtered">0</strong> inscripciones de <strong id="count-total">1937</strong></div>
+                    <button class="btn-clear-filters" onclick="clearAllFilters()">🗑️ Borrar filtros</button>
                 </div>
             </div>
         </div>
@@ -970,6 +998,16 @@
         function scrollToTable() {
             const tableSection = document.getElementById('tabla-inscripciones');
             tableSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        function clearAllFilters() {
+            document.getElementById('filtro-evento').value = 'todos';
+            document.getElementById('filtro-categoria').value = 'todos';
+            document.getElementById('filtro-club').value = 'todos';
+            document.getElementById('filtro-estado').value = 'todos';
+            document.getElementById('filtro-nombre').value = '';
+            document.getElementById('search-count').classList.remove('visible');
+            applyFilters();
         }
         
         function applyFilters() {
