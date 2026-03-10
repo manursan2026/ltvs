@@ -290,7 +290,7 @@
     </div>
     <div class="sidebar-divider"></div>
     <div>
-      <div class="sidebar-section-title">Resumen filtrado</div>
+      <div class="sidebar-section-title">Resumen global</div>
       <div id="sidebar-stats"></div>
     </div>
   </aside>
@@ -505,13 +505,16 @@ function buildDiffMaps() {
   window.changedCodes =new Set([...c12].filter(c=>c11.has(c)&&map11[c].VELOCIDAD_KMH!==map12[c].VELOCIDAD_KMH));
   RAW_S12.forEach(r=>{ r._diff=newCodes.has(r.CODIGO_LTV)?'new':changedCodes.has(r.CODIGO_LTV)?'changed':''; });
   RAW_S11.forEach(r=>{ r._diff=removedCodes.has(r.CODIGO_LTV)?'removed':''; });
-  document.getElementById('diff-count-new').textContent=newCodes.size;
-  document.getElementById('diff-count-removed').textContent=removedCodes.size;
-  document.getElementById('diff-count-changed').textContent=changedCodes.size;
-  document.getElementById('diff-count-all').textContent=newCodes.size+removedCodes.size+changedCodes.size;
-  document.getElementById('banner-new').textContent=newCodes.size;
-  document.getElementById('banner-removed').textContent=removedCodes.size;
-  document.getElementById('banner-changed').textContent=changedCodes.size;
+  const countNew     = RAW_S12.filter(r=>r._diff==='new').length;
+  const countRemoved = RAW_S11.filter(r=>r._diff==='removed').length;
+  const countChanged = RAW_S12.filter(r=>r._diff==='changed').length;
+  document.getElementById('diff-count-new').textContent=countNew;
+  document.getElementById('diff-count-removed').textContent=countRemoved;
+  document.getElementById('diff-count-changed').textContent=countChanged;
+  document.getElementById('diff-count-all').textContent=countNew+countRemoved+countChanged;
+  document.getElementById('banner-new').textContent=countNew;
+  document.getElementById('banner-removed').textContent=countRemoved;
+  document.getElementById('banner-changed').textContent=countChanged;
 }
 
 // ── Dashboard app logic ───────────────────────────────────────
