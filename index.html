@@ -651,11 +651,32 @@ function updateKPIs(){
   document.getElementById('table-count').textContent=total.toLocaleString()+' resultados';
 
   if(!diffMode && currentWeek===12) {
-    const s11Total=RAW_S11.length;
-    const s11Critical=RAW_S11.filter(r=>{const v=parseSpeed(r.VELOCIDAD_KMH);return v>=0&&v<=30;}).length;
-    const s11Speeds=RAW_S11.map(r=>parseSpeed(r.VELOCIDAD_KMH)).filter(v=>v>0);
+    // Apply the same active filters to S11 data for a fair comparison
+    const search=document.getElementById('search').value.toLowerCase();
+    const linea=document.getElementById('filter-linea').value;
+    const motivo=document.getElementById('filter-motivo').value;
+    const ancho=document.getElementById('filter-ancho').value;
+    const speedMin=parseInt(document.getElementById('speed-min').value)||0;
+    const speedMax=parseInt(document.getElementById('speed-max').value)||9999;
+    const filteredS11=RAW_S11.filter(r=>{
+      const v=parseSpeed(r.VELOCIDAD_KMH);
+      if(linea && r.NUMERO_LINEA!==linea) return false;
+      if(motivo && r.MOTIVO.trim()!==motivo) return false;
+      if(ancho && r.ANCHO_VIA!==ancho) return false;
+      if(v>=0 && (v<speedMin||v>speedMax)) return false;
+      if(csvFilter==='X' && r.CSV!=='X') return false;
+      if(csvFilter==='NO' && r.CSV==='X') return false;
+      if(search){
+        const txt=(r.TRAYECTO_ESTACION+r.MOTIVO+r.CODIGO_LTV+(r.OBSERVACIONES||'')+(r.DESCRIPCION_LINEA||'')).toLowerCase();
+        if(!txt.includes(search)) return false;
+      }
+      return true;
+    });
+    const s11Total=filteredS11.length;
+    const s11Critical=filteredS11.filter(r=>{const v=parseSpeed(r.VELOCIDAD_KMH);return v>=0&&v<=30;}).length;
+    const s11Speeds=filteredS11.map(r=>parseSpeed(r.VELOCIDAD_KMH)).filter(v=>v>0);
     const s11Avg=s11Speeds.length?Math.round(s11Speeds.reduce((a,b)=>a+b,0)/s11Speeds.length):0;
-    const s11Lines=new Set(RAW_S11.map(r=>r.NUMERO_LINEA)).size;
+    const s11Lines=new Set(filteredS11.map(r=>r.NUMERO_LINEA)).size;
     setDelta('kpi-total-delta', total, s11Total, false);
     setDelta('kpi-critical-delta', critical, s11Critical, false);
     setDelta('kpi-avgspeed-delta', avg, s11Avg, true);
