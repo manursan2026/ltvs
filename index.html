@@ -586,25 +586,90 @@ function setCsv(btn, val) {
 }
 
 function reinitFilters() {
+  updateLineasSelect();
+  updateMotivosSelect();
+}
+
+function getFilteredBase() {
+  // Returns base dataset filtered by current selections (for cascading)
   const src = currentWeek === 11 ? RAW_S11 : RAW_S12;
-  const lineas = [...new Set(src.map(r=>r.NUMERO_LINEA))].sort((a,b)=>+a-+b);
-  const sel = document.getElementById('filter-linea');
+  const ancho  = document.getElementById('filter-ancho').value;
+  const linea  = document.getElementById('filter-linea').value;
+  const motivo = document.getElementById('filter-motivo').value;
+  const speedMin = parseInt(document.getElementById('speed-min').value)||0;
+  const speedMax = parseInt(document.getElementById('speed-max').value)||9999;
+  const search = document.getElementById('search').value.toLowerCase();
+  return src.filter(r => {
+    const v = parseSpeed(r.VELOCIDAD_KMH);
+    if(ancho  && r.ANCHO_VIA !== ancho) return false;
+    if(linea  && r.NUMERO_LINEA !== linea) return false;
+    if(motivo && r.MOTIVO.trim() !== motivo) return false;
+    if(v>=0 && (v<speedMin||v>speedMax)) return false;
+    if(csvFilter==='X' && r.CSV!=='X') return false;
+    if(csvFilter==='NO' && r.CSV==='X') return false;
+    if(search){
+      const txt=(r.TRAYECTO_ESTACION+r.MOTIVO+r.CODIGO_LTV+(r.OBSERVACIONES||'')+(r.DESCRIPCION_LINEA||'')).toLowerCase();
+      if(!txt.includes(search)) return false;
+    }
+    return true;
+  });
+}
+
+function updateLineasSelect() {
+  const src = currentWeek === 11 ? RAW_S11 : RAW_S12;
+  const ancho  = document.getElementById('filter-ancho').value;
+  const motivo = document.getElementById('filter-motivo').value;
+  const sel    = document.getElementById('filter-linea');
+  const prev   = sel.value;
+  // Filter source by ancho + motivo to get valid lineas
+  const base = src.filter(r => {
+    if(ancho  && r.ANCHO_VIA !== ancho) return false;
+    if(motivo && r.MOTIVO.trim() !== motivo) return false;
+    return true;
+  });
+  const lineas = [...new Set(base.map(r=>r.NUMERO_LINEA))].sort((a,b)=>+a-+b);
   sel.innerHTML = '<option value="">Todas las líneas</option>';
   lineas.forEach(l=>{
     const d=src.find(r=>r.NUMERO_LINEA===l);
     const o=document.createElement('option');
-    o.value=l; o.textContent=l+(d?' \u2014 '+d.DESCRIPCION_LINEA:'');
+    o.value=l; o.textContent=l+(d?' — '+d.DESCRIPCION_LINEA:'');
     sel.appendChild(o);
   });
-  const motivos=[...new Set(src.map(r=>r.MOTIVO.trim()))].filter(Boolean).sort();
-  const selM=document.getElementById('filter-motivo');
+  // Restore previous selection if still valid
+  if(prev && lineas.includes(prev)) sel.value = prev; else sel.value = '';
+}
+
+function updateMotivosSelect() {
+  const src = currentWeek === 11 ? RAW_S11 : RAW_S12;
+  const ancho = document.getElementById('filter-ancho').value;
+  const linea = document.getElementById('filter-linea').value;
+  const selM  = document.getElementById('filter-motivo');
+  const prev  = selM.value;
+  const base = src.filter(r => {
+    if(ancho && r.ANCHO_VIA !== ancho) return false;
+    if(linea && r.NUMERO_LINEA !== linea) return false;
+    return true;
+  });
+  const motivos=[...new Set(base.map(r=>r.MOTIVO.trim()))].filter(Boolean).sort();
   selM.innerHTML='<option value="">Todos los motivos</option>';
   motivos.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;selM.appendChild(o);});
+  if(prev && motivos.includes(prev)) selM.value = prev; else selM.value = '';
 }
 
 function initFilters() {
   reinitFilters();
-  ['search','filter-linea','filter-motivo','filter-ancho','speed-min','speed-max'].forEach(id=>{
+  // Cascading: ancho drives lineas + motivos; linea drives motivos
+  document.getElementById('filter-ancho').addEventListener('change', ()=>{
+    updateLineasSelect();
+    updateMotivosSelect();
+    applyFilters();
+  });
+  document.getElementById('filter-linea').addEventListener('change', ()=>{
+    updateMotivosSelect();
+    applyFilters();
+  });
+  document.getElementById('filter-motivo').addEventListener('change', applyFilters);
+  ['search','speed-min','speed-max'].forEach(id=>{
     document.getElementById(id).addEventListener('input', applyFilters);
     document.getElementById(id).addEventListener('change', applyFilters);
   });
@@ -824,11 +889,14 @@ function updateSpeedBars(){
 }
 
 function resetFilters(){
-  ['search','filter-linea','filter-motivo','filter-ancho','speed-min','speed-max'].forEach(id=>document.getElementById(id).value='');
+  ['search','filter-ancho','filter-linea','filter-motivo','speed-min','speed-max'].forEach(id=>document.getElementById(id).value='');
   setCsv(document.querySelector('.csv-btn[data-csv=""]'),'');
   sortKey='';sortDir=1;
   document.querySelectorAll('.sort-arrow').forEach(el=>el.textContent='\u2195');
   document.querySelectorAll('th').forEach(el=>el.classList.remove('active-sort'));
+  // Rebuild cascading selects fully then apply
+  updateLineasSelect();
+  updateMotivosSelect();
   applyFilters();
 }
 
